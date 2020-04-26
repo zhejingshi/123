@@ -169,10 +169,7 @@ Check <- function(country_name){
   table <- c(Happiness.Rank, Happiness.Score)
   names(table) = c("Happiness.Rank", "Happiness.Score")
   return(table)
-  
-
 }
-
 
 Check('China')
 ```
@@ -188,6 +185,14 @@ Check('China')
 <br>
 <br>
 <br>
+#### Density plot
+```{r}
+Df %>%
+  ggplot(aes(x = Happiness.Score) ) + 
+  geom_density(color = "gray", fill = "red", alpha = 0.75) + 
+  xlab("Happiness.Score") + ylab("Density") + ggtitle("Happiness score Density plot") 
+
+```
 
 #### 7) Freedom - Happiness plot
 
