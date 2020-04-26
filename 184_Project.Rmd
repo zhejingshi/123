@@ -1,0 +1,237 @@
+---
+title: "Stats 184 Final Project"
+author: "Zhejing Shi, Jianzhuo, Liu"
+output: html_notebook
+---
+
+<br>
+<br>
+<br>
+
+#### **Guiding Question 1 : Does higher freedom score means higher happiness score?**
+#### **Guiding Question 2: Do countries with higher Economy score tend to have higher happiness score?**
+#### **Guiding Question 3: Do Life.Expectancy and happiness score have a positive relationship?**
+<br>
+
+#### We choose this topic because we are very interested in which countries have the high happiness scores, and why those countries have high scores.
+<br>
+
+#### One of the challenge is that we did not know linear regression before.However, we think it is important to apply such a method in our project. Thus, we learned it and applied it in our report.
+
+<br> 
+
+#### **Important findings of our investigation**
+#### 1) North America region has the highest average happiness score
+#### 2) Countries with higher freedom score seem to have higher happiness score
+#### 3) Countries with higher Economy score tend to have higher happiness score
+#### 4) Life.Expectancy score and happiness score have a positive relationship?
+
+<br> 
+
+#### Become acquainted with the data sources:
+##### 1) For the first dataset "2017.csv", it is a World Happiness Report survey of collected in 2017. This dataset is originally released at the United Nations at an event celebrating International Day of Happiness on March 20th. 
+##### 2) There are 155 different cases, and ach case represent a country in the world.
+##### 3) The second dataset "counntry" is the country statistics originally comes from UN statistical databases. Each case represent a country 
+##### 5) We plan to use 25 variables
+
+<br>
+<br>
+
+### Exploration!!!
+#### 1) Loadind the first dataset "Happy" that contains the happiness score for each country
+```{r}
+# all packages used for the assignment
+getwd()
+setwd('~/Desktop/Stats462/')
+library(mosaicData)
+library(ggplot2)
+library(mosaic)
+
+Happy = read.csv('2017.csv', header = T)
+head(Happy)
+
+### change the varible name so we can easily inner join with another dataset
+names(Happy)[1] = "country"
+names(Happy)[6] = 'Economy'
+names(Happy)[8] = 'Life.Expectancy'
+names(Happy)[11] = 'Government.Corruption'
+head(Happy)
+
+```
+<br>
+<br>
+<br>
+<br>
+
+### 2) Loading the second dataset and join the two datasets.
+##### *(Country Statistics originally comes from UN statistical databases. Each case represent a country)* 
+```{r}
+
+### The second Dataset containing countries information around the world
+Country <- read.csv('country_profile_variables.csv', header = T)
+head(Country)
+
+### Change the variable names
+names(Country)[3] = 'Surface.area'
+names(Country)[4] = "Population"
+names(Country)[5] = "Population.density"
+names(Country)[6] = "Sex.ratio"
+names(Country)[7] = "GDP.Gross.domestic.product"
+names(Country)[8] = "GDP.growth.rate"
+names(Country)[names(Country)=="Economy..Services.and.other.activity....of.GVA."] =  "Services.and.other.activity"
+names(Country)[names(Country)=="Mobile.cellular.subscriptions..per.100.inhabitants."] =  "cellular.subscriptions"
+names(Country)[names(Country)=="Education..Government.expenditure....of.GDP."] =  "Education.expenditure"
+names(Country)[names(Country)=="Individuals.using.the.Internet..per.100.inhabitants."] =  "using.the.Internet"
+names(Country)[names(Country)=="Fertility.rate..total..live.births.per.woman."] =  "Fertility.rate"
+names(Country)[names(Country)=="Unemployment....of.labour.force."] =  "Unemployment"
+
+
+### Select some of the variables to form a new country dataset
+Country_New = Country[c("country", "Region", 'Surface.area', "Population", "Population.density", "Sex.ratio", "GDP.Gross.domestic.product",  "GDP.growth.rate", "Services.and.other.activity", "cellular.subscriptions","Education.expenditure", "using.the.Internet","Fertility.rate", "Unemployment")]
+
+head(Country_New)
+
+
+### Check distinct regions in the dataset
+categories <- unique(Country_New$Region) 
+categories
+
+
+### Join the two datasets we have
+Df<- merge(Happy,Country_New, by="country")
+head(Df)
+
+```
+<br>
+<br>
+<br>
+
+### 3) Build a linear regression model
+```{r}
+
+### Transform the data type
+Df$GDP.growth.rate <- as.integer(Df$GDP.growth.rate)
+Df$Unemployment <- as.integer(Df$Unemployment)
+Df$Education.expenditure <- as.integer(Df$Education.expenditure)
+
+
+### Build a Linear regression model with 9variables to predict the Happiness.Score
+mod1 <- lm(Happiness.Score~Economy+Life.Expectancy + Generosity + Government.Corruption +GDP.growth.rate + Services.and.other.activity + Education.expenditure +using.the.Internet + Unemployment, data= Df)
+summary(mod1)
+```
+#### We build a linear regression model predicting the Happiness.Score. We selected 9 important variables, and we have a R suqare of 0.8062. 
+<br>
+<br>
+<br>
+
+### 4) Happiness.score analysis in Aisa only
+```{r}
+Regions <- unique(Df$Region)
+Regions
+
+Df %>% 
+  filter(grepl("Asia", Region, ignore.case = TRUE))%>%
+  arrange(desc(Happiness.Score))
+```
+#### From the table we can see that Israel has the higest Happiness.Score, and Yemen has the lowest score
+
+<br>
+<br>
+<br>
+
+
+### 5) Happiness.score in differen Regions around the world
+```{r}
+Region_stats <- 
+  Df%>%
+  group_by(Region)%>%
+  summarise(avg_score = mean(Happiness.Score))%>%
+  arrange(desc(avg_score))
+Region_stats
+
+
+filter(Region_stats, avg_score == min(avg_score))
+
+```
+#### From the table we can conclude that people living in NorthernAmerican have higest happiness.score, and people living in MiddleAfrica have the lowest happiness.score
+<br>
+<br>
+<br>
+
+### 6) User-written function
+```{r}
+Check <- function(country_name){
+  information = filter(Df, country == country_name)
+  Region = information$Region
+  Happiness.Rank = information$Happiness.Rank
+  Happiness.Score = information$Happiness.Score
+
+  table <- c(Happiness.Rank, Happiness.Score)
+  names(table) = c("Happiness.Rank", "Happiness.Score")
+  return(table)
+  
+
+}
+
+
+Check('China')
+```
+#### 1) We build a functon to take the country names as inputs. Our function can check a countriy's Happiness.Rank and Happiness.Score.
+#### 2) For example, China ranks 79th, and has a happiness.score of 5.273.
+<br>
+<br>
+<br>
+
+
+
+#### Plots
+<br>
+<br>
+<br>
+
+#### 7) Freedom - Happiness plot
+
+```{r}
+cor(Happy$Happiness.Score, Happy$Freedom)
+favstats(~Happiness.Score, data = Happy)
+
+ggplot(data = Df, aes(x = Freedom, y = Happiness.Score)) + 
+  geom_point()+
+  aes(color=Region) +
+  xlab ('Freedom') + 
+  ylab ('Happiness Score')+ 
+  ggtitle("Freedom -- Happiness plot")
+
+```
+#### From the graph we can claim that freedom score and happniess score have a positive relationship
+
+<br>
+<br>
+
+#### 8) Economy - Happiness plot
+
+```{r}
+ggplot(data = Df, aes(x = Economy, y = Happiness.Score)) + 
+  geom_point()+
+  aes(size=using.the.Internet) + 
+  stat_smooth() + 
+  xlab ('Economy_score') + 
+  ylab ('Happiness Score')+ 
+  ggtitle("Economy -- Happiness plot")
+```
+#### From the plot we can conclude that economy score and happniess score have a positive relationship.
+<br>
+<br>
+
+#### 9) Life.Expectancy - Happiness plot
+```{r}
+ggplot(data = Df, aes(x = Life.Expectancy, y = Happiness.Score)) + 
+  geom_point()+
+  aes(size=Generosity) + 
+  stat_smooth() + 
+  xlab ('Life.Expectancy') + 
+  ylab ('Happiness Score')+ 
+  ggtitle("Life.Expectancy -- Happiness plot")
+```
+#### From the plot we can conclude that Life.Expectancy score and happniess score have a positive relationship.
+
